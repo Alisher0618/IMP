@@ -1,1 +1,1 @@
-# IMP
+# IMP - Microprocessors and Embedded Systems
