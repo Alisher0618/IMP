@@ -1,126 +1,114 @@
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_VL53L0X.h>
+#include <Adafruit_SSD1306.h>
 #include <RotaryEncoder.h>
 
-#define GPIO_14 14
-#define GPIO_27 27 
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
 
-RotaryEncoder *encoder = nullptr; // defined in setup
+#define OLED_RESET    -1
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define ROTARYSTEPS 25 // increasing and decreasing step
-#define ROTARYMIN 100 // min value for delay
-#define ROTARYMAX 1000 // max value for delay
-#define ROTARYDELAY 5 // const value for changing and operating the delay
+const int GPIO_14 = 14; 
+const int GPIO_27 = 27; 
+const int GPIO_16 = 16; //Button click
 
-#define ERRORDIST 819.10
+const int menuItems = 2; 
+int selectedMenuItem = 10; 
 
-#define OLED_RESET -1
-Adafruit_SSD1306 display(OLED_RESET);
-Adafruit_VL53L0X lox = Adafruit_VL53L0X();
+const char* lang[] = {"Czech/Cestina", "English/Anglictina"};
 
-int interrupt_time = 0;
-int initial_delay = 500; // Initial value of delay
+RotaryEncoder *encoder = nullptr;
 
-void checkPosition(){ // if comes interrauption of encoder(inc or dec delay)
-  if ((millis() - interrupt_time) > ROTARYDELAY){
-    encoder->tick();
-    interrupt_time = millis();
+#define STEP 10
+#define MIN_VALUE 10
+#define MAX_VALUE 20
+
+void checkPosition() { // if comes interruption of encoder (inc or dec delay)
+  encoder->tick();
+}
+
+bool chooseLang = false;
+int counter = 0;
+
+void switchLanguage() {
+  if(chooseLang == false){
+    chooseLang = true;
+  }else{
+    chooseLang = false;
   }
+
 }
 
 void setup() {
   Serial.begin(9600);
-  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-
-  if(!lox.begin()) {
-    Serial.println(F("Failed to boot VL53L0X"));
-    while(1);
-  }
+  
+  pinMode(GPIO_16, INPUT_PULLUP);
 
   encoder = new RotaryEncoder(GPIO_14, GPIO_27, RotaryEncoder::LatchMode::TWO03);
-  encoder->setPosition(20);
-
+  encoder->setPosition(1);
+  
   attachInterrupt(digitalPinToInterrupt(GPIO_14), checkPosition, CHANGE);
   attachInterrupt(digitalPinToInterrupt(GPIO_27), checkPosition, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(GPIO_16), switchLanguage, FALLING);
 
-  
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+
   display.display();
   delay(2000);
   display.clearDisplay();
 }
 
-float max_dist = 0.0; // for additional info about max distance
-
 void loop() {
+  display.clearDisplay();
+  display.setTextSize(1.2);
+  display.setTextColor(SSD1306_WHITE);
   
-  VL53L0X_RangingMeasurementData_t measure;
-  
-  lox.rangingTest(&measure, false);
-  
-  if (measure.RangeStatus != 4) {  // Check for a valid measurement
+  display.setCursor(0, 0);
+  display.println("Choose Language/");
+  display.println("Vyberte Jazyk");
 
-    encoder->tick(); // Regularly check the state of the encoder
-
-    int newPos = encoder->getPosition() * ROTARYSTEPS;
-    if (newPos < ROTARYMIN){ // cross the min value of DELAY
-        encoder->setPosition(ROTARYMIN / ROTARYSTEPS);
-        newPos = ROTARYMIN;
-
-    } else if (newPos > ROTARYMAX){ // cross the max value of DELAY
-      encoder->setPosition(ROTARYMAX / ROTARYSTEPS);
-      newPos = ROTARYMAX;
+  for (int i = 1; i <= menuItems; ++i) {
+    display.setCursor(0, (i + 2) * 10);
+    if (i == (selectedMenuItem / 10)) {
+      display.println("> " + String(lang[i - 1]));
+    } else {
+      display.println("  " + String(lang[i - 1]));
     }
-
-    if (initial_delay != newPos){  // Serial output, if delay is changed
-      Serial.print("Delay changed: ");
-      Serial.println(newPos);
-      initial_delay = newPos;
-    }
-
-    
-    Serial.print(F("Distance (mm): ")); 
-    Serial.println(measure.RangeMilliMeter);
-    
-    
-    
-    float distance_cm = measure.RangeMilliMeter / 10.0; // Convert mm to cm
-
-    //------------------------- OUTPUT ON DISPLAY -------------------------
-
-    display.clearDisplay();
-    display.setTextSize(1);
-    if(distance_cm > 101.0){
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0,0);
-      display.print(F("Dist.: out of range"));
-    }else{
-      display.setTextColor(SSD1306_WHITE);
-      display.setCursor(0,0);
-      display.print(F("Distance: "));
-      display.print(distance_cm);
-      display.print(F(" cm"));
-
-      if(distance_cm > max_dist && distance_cm != ERRORDIST){
-        max_dist = distance_cm;
-      }
-    }
-    
-    display.setCursor(0,10);
-    display.print(F("Delay: "));
-    display.print(initial_delay);
-    display.print(F(" ms"));
-
-    display.setCursor(0,20);
-    display.print(F("Max dist.: "));
-    display.print(max_dist);
-    display.print(F(" cm"));
-
-    display.display();
-  } else {
-    Serial.println(F("Out of range"));
   }
-  
-  delay(initial_delay);
+
+  int newPos = encoder->getPosition() * STEP;
+  if (newPos < MIN_VALUE) {
+    encoder->setPosition(MIN_VALUE / STEP);
+    newPos = MIN_VALUE;
+  } 
+  else if (newPos > MAX_VALUE) { 
+    encoder->setPosition(MAX_VALUE / STEP);
+    newPos = MAX_VALUE;
+  }
+
+  selectedMenuItem = newPos;
+
+  if(selectedMenuItem == 10 && chooseLang == true){
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(10, 10);
+    display.println("AHOJ");
+    display.display();
+  }else if(selectedMenuItem == 20 && chooseLang == true){
+    display.clearDisplay();
+    display.setTextSize(2);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(10, 10);
+    display.println("HELLO");
+    display.display();
+  }
+
+  display.display();
+  delay(100);
+
 }
