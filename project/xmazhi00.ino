@@ -1,3 +1,9 @@
+/*
+  Projekt: Měření vzdálenosti laserovým senzorem
+  Author: Alisher Mazhirinov, xmazhi00
+  VUT FIT, 2023
+*/
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -66,10 +72,8 @@ void setup() {
 }
 
 float max_dist = 0.0; // for additional info about max distance
-int initial_delay = 500;
 
 void loop() {
-  
   if(chooseLang == false){
     display.clearDisplay();
     display.setTextSize(1.2);
@@ -150,7 +154,7 @@ void loop() {
       if (distance_cm > 101.0) {
         display.setTextColor(SSD1306_WHITE);
         display.setCursor(0, 20);
-        display.print(F("Dist.: out of range"));
+        display.print(F("Dist.: Out of range"));
       } else {
         display.setTextColor(SSD1306_WHITE);
         display.setCursor(0, 20);
