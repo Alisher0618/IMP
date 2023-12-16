@@ -1,5 +1,5 @@
 /*
-  Projekt: Měření vzdálenosti laserovým senzorem
+  Project: Distance measurement with a laser sensor
   Author: Alisher Mazhirinov, xmazhi00
   VUT FIT, 2023
 */
@@ -18,7 +18,7 @@ Adafruit_VL53L0X lox = Adafruit_VL53L0X();
 
 const int GPIO_14 = 14; 
 const int GPIO_27 = 27; 
-const int GPIO_16 = 16; //Stisk tlačítka
+const int GPIO_16 = 16; //Stisk tlačítka / button click
 
 const int menuItems = 2; 
 int selectedMenuItem = 10; 
@@ -33,6 +33,7 @@ RotaryEncoder *encoder = nullptr;
 #define ERRORDIST 819.10
 
 // pokud dojde k přerušení enkodéru (inc nebo dec)
+// if an encoder interrupt occurs (inc or dec)
 void checkPosition() { 
   encoder->tick();
 }
@@ -40,7 +41,7 @@ void checkPosition() {
 bool chooseLang = false;
 int counter = 0;
 
-// funkce pro přepínání mezi jazyky
+// funkce pro přepínání mezi jazyky / switching between languages
 void switchLanguage() {
   if(chooseLang == false){
     chooseLang = true;
@@ -72,10 +73,10 @@ void setup() {
   display.clearDisplay();
 }
 
-float max_dist = 0.0; // pro informace o maximální vzdálenosti
+float max_dist = 0.0; // pro informace o maximální vzdálenosti / maximal distance value
 
 void loop() {
-  // pokud na displeji je ted hlavni menu
+  // pokud na displeji je ted hlavni menu / if main menu is on display
   if(chooseLang == false){
     display.clearDisplay();
     display.setTextSize(1.2);
@@ -85,7 +86,7 @@ void loop() {
     display.println("Choose Language/");
     display.println("Vyberte Jazyk");
 
-    // hlavní menu
+    // hlavní menu / main menu
     for (int i = 1; i <= menuItems; ++i) {            
       display.setCursor(0, (i + 2) * 10);
       if (i == (selectedMenuItem / 10)) {
@@ -95,7 +96,7 @@ void loop() {
       }
     }
 
-    // pozice enkoderu
+    // pozice enkoderu / position of encoder
     int newPos = encoder->getPosition() * STEP;
 
     if (newPos < MIN_VALUE) {
@@ -119,7 +120,7 @@ void loop() {
 
     float distance_cm = measure.RangeMilliMeter / 10.0;
     
-    if(selectedMenuItem == 10 && chooseLang == true){ // čeština
+    if(selectedMenuItem == 10 && chooseLang == true){ // čeština / czech
       display.clearDisplay();
       display.setTextSize(1);
       display.setTextColor(SSD1306_WHITE);
@@ -147,7 +148,7 @@ void loop() {
       display.setTextColor(SSD1306_WHITE);
       display.setCursor(0, 40);
       display.println("Autor: xmazhi00");
-    }else if(selectedMenuItem == 20 && chooseLang == true){ // angličtina
+    }else if(selectedMenuItem == 20 && chooseLang == true){ // angličtina / english
       display.clearDisplay();
       display.setTextSize(1);
       display.setTextColor(SSD1306_WHITE);
