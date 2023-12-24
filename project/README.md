@@ -7,4 +7,4 @@ The goal of the project is to design and implement a built-in application in C l
     Documentation 3/4
     Functionality 5/5
     Presentation 1/1
-    Implemetation 4/4
+    Implementation 4/4
